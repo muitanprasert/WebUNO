@@ -440,12 +440,30 @@
     centerPilesNode.append(topCardNode);
 
     drawPileButton.replaceChildren();
-    const backLayerCount = Math.max(1, Math.min(3, game.deck.length > 0 ? 3 : 1));
-    for (let index = 0; index < backLayerCount; index += 1) {
-      const backCard = document.createElement("div");
-      backCard.className = "back-card";
-      drawPileButton.append(backCard);
+    drawPileButton.textContent = "DRAW";
+  }
+
+  function seatCenterY() {
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const shortSide = Math.min(viewportWidth, viewportHeight);
+    const isVeryShort = viewportHeight < 500;
+    const isSmallViewport = viewportWidth <= 780 || viewportHeight <= 900;
+
+    if (isVeryShort) {
+      return 40;
     }
+    if (viewportWidth <= 420 || shortSide <= 420) {
+      return 39;
+    }
+    if (viewportWidth <= 600 || shortSide <= 560) {
+      return 41.5;
+    }
+    if (isSmallViewport) {
+      return 44.5;
+    }
+
+    return 50;
   }
 
   function seatPosition(index, totalPlayers) {
@@ -456,21 +474,60 @@
     const step = 360 / totalPlayers;
     const angleDeg = 90 + step * index;
     const angle = (angleDeg * Math.PI) / 180;
-    const radius = window.innerWidth < 780 ? 39 : 42;
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const shortSide = Math.min(viewportWidth, viewportHeight);
+    const isVeryShort = viewportHeight < 500;
+    const isSmallViewport = viewportWidth <= 780 || viewportHeight <= 900;
+
+    let radius = 42;
+    if (isVeryShort) {
+      radius = 28;
+    } else if (viewportWidth <= 420 || shortSide <= 420) {
+      radius = 30;
+    } else if (viewportWidth <= 600 || shortSide <= 560) {
+      radius = 34;
+    } else if (viewportWidth <= 780 || viewportHeight <= 900) {
+      radius = 38;
+    }
+
+    if (totalPlayers > 4) {
+      radius -= Math.min(5, totalPlayers - 4);
+    }
+
+    const radiusY = Math.max(24, radius - (viewportHeight < 740 ? 4 : 0));
+    let radiusX = radius;
+    if (viewportWidth <= 420 || shortSide <= 420) {
+      radiusX += 14;
+    } else if (viewportWidth <= 600 || shortSide <= 560) {
+      radiusX += 11;
+    } else if (viewportWidth <= 780 || viewportHeight <= 900) {
+      radiusX += 6;
+    }
+
+    if (totalPlayers === 4 && (viewportWidth <= 780 || shortSide <= 700)) {
+      radiusX += 4;
+    }
+
+    const centerY = seatCenterY();
+
+    const topLimit = isVeryShort ? 10 : (viewportHeight < 720 ? 11 : 12);
+    const bottomLimit = isVeryShort ? 58 : (viewportHeight < 720 ? 64 : 72);
 
     const position = {
-      x: 50 + radius * Math.cos(angle),
-      y: 50 + radius * Math.sin(angle),
+      x: 50 + radiusX * Math.cos(angle),
+      y: centerY + radiusY * Math.sin(angle),
     };
 
-    // Keep top-side agent labels clear of the header on shorter viewports.
-    position.y = Math.max(13, position.y);
+    // Keep top-side labels clear of the header and lower seats clear of wrapped hand rows.
+    position.y = Math.max(topLimit, Math.min(bottomLimit, position.y));
 
     return position;
   }
 
   function seatFacingRotation(position) {
-    const angleToCenter = Math.atan2(50 - position.y, 50 - position.x) * (180 / Math.PI);
+    const centerY = seatCenterY();
+    const angleToCenter = Math.atan2(centerY - position.y, 50 - position.x) * (180 / Math.PI);
     // Rotate seat content so each agent faces the table center.
     const rawRotation = angleToCenter + 90;
     if (rawRotation > 180) {
@@ -483,13 +540,18 @@
     const stackNode = document.createElement("div");
     stackNode.className = "stack";
 
+    const rootStyles = window.getComputedStyle(document.documentElement);
+    const baseCardWidth = Number.parseFloat(rootStyles.getPropertyValue("--stack-card-width")) || 62;
+    const baseCardHeight = Number.parseFloat(rootStyles.getPropertyValue("--stack-card-height")) || 94;
+    const viewportWidth = window.innerWidth;
     const compact = game.playerCount > 5;
-    const cardWidth = compact ? 52 : 62;
-    const cardHeight = compact ? 78 : 94;
+    const cardWidth = Math.max(28, compact ? baseCardWidth - 6 : baseCardWidth);
+    const cardHeight = Math.max(42, compact ? baseCardHeight - 8 : baseCardHeight);
     const visible = Math.min(count, 14);
-    const offset = Math.round(cardWidth * 0.5);
+    const overlapRatio = viewportWidth <= 420 ? 0.28 : (viewportWidth <= 780 ? 0.34 : 0.5);
+    const offset = Math.max(8, Math.round(cardWidth * overlapRatio));
     stackNode.style.height = `${cardHeight}px`;
-    stackNode.style.width = `${Math.max(36, 64 + Math.max(0, visible - 1) * offset)}px`;
+    stackNode.style.width = `${Math.max(28, cardWidth + Math.max(0, visible - 1) * offset)}px`;
 
     for (let index = 0; index < visible; index += 1) {
       const cardNode = document.createElement("div");
@@ -575,9 +637,8 @@
 
   function renderHand() {
     playerHandNode.textContent = "";
+    playerHandNode.classList.remove("multi-row");
     const hand = game.handOf(HUMAN_INDEX).filter((card) => !hiddenHumanCardIds.has(card.id));
-    const midPoint = (hand.length - 1) / 2;
-
     hand.forEach((card, index) => {
       const button = document.createElement("button");
       button.type = "button";
@@ -588,11 +649,8 @@
       button.append(createCardImage(card, cardLabel(card)));
 
       const isSelected = selectedCardIds.has(card.id);
-      const tilt = (index - midPoint) * 1.8;
-      const lift = Math.abs(index - midPoint) * 2;
-      const selectedLift = isSelected ? -40 : 0;
-      button.style.setProperty("--tilt", `${tilt}deg`);
-      button.style.setProperty("--lift", `${lift + selectedLift}px`);
+      button.style.setProperty("--tilt", "0deg");
+      button.style.setProperty("--lift", isSelected ? "-32px" : "0px");
       button.style.zIndex = String(100 + index + (isSelected ? 1000 : 0));
 
       const playable = canPlayCard(card, HUMAN_INDEX);
@@ -636,6 +694,12 @@
 
       playerHandNode.append(button);
     });
+
+    const rowOffsets = new Set();
+    for (const cardNode of playerHandNode.children) {
+      rowOffsets.add(cardNode.offsetTop);
+    }
+    playerHandNode.classList.toggle("multi-row", rowOffsets.size > 1);
   }
 
   function updateTurnHighlights() {

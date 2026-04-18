@@ -9,6 +9,24 @@
   --accent: #ffd26a;
   --danger: #fee0dc;
   --card-white: #ffffff;
+  --center-zone-size: min(36vw, 340px);
+  --direction-size: min(36vw, 340px);
+  --direction-arrow-height: min(18vw, 170px);
+  --pile-width: clamp(72px, 9vw, 104px);
+  --pile-height: clamp(104px, 13vw, 150px);
+  --draw-pile-width: clamp(68px, 8vw, 94px);
+  --draw-pile-height: clamp(96px, 11vw, 136px);
+  --table-card-width: min(var(--pile-width), var(--draw-pile-width), calc(var(--center-zone-size) * 0.34));
+  --table-card-height: min(var(--pile-height), var(--draw-pile-height), calc(var(--center-zone-size) * 0.52));
+  --table-pile-gap: clamp(10px, 2vw, 18px);
+  --stack-card-width: 62px;
+  --stack-card-height: 94px;
+  --hand-card-width: clamp(88px, 9vw, 122px);
+  --hand-card-height: clamp(132px, 14vw, 182px);
+  --hand-card-overlap: -22px;
+  --hand-min-height: clamp(140px, 19vh, 230px);
+  --table-center-y: 45%;
+  --table-pile-offset-x: calc((var(--table-card-width) * 0.5) + (var(--table-pile-gap) * 0.5));
 }
 
 * {
@@ -33,13 +51,15 @@ button {
 }
 
 .app-shell {
-  width: 100vw;
+  width: 100%;
   height: 100vh;
+  min-height: 100dvh;
   padding: 0.5rem;
   display: grid;
   grid-template-rows: auto 1fr;
   gap: 0.35rem;
   overflow: hidden;
+  overflow-x: hidden;
 }
 
 .hud {
@@ -62,8 +82,7 @@ button {
   color: #f7ddd0;
 }
 
-.hud button,
-.draw-pile {
+.hud button {
   border: 3px solid var(--ink);
   background: #f0e4dc;
   color: var(--ink);
@@ -177,7 +196,7 @@ button {
 }
 
 .rules-card {
-  width: min(92vw, 640px);
+  width: min(92vw, 800px);
 }
 
 .rules-copy p {
@@ -266,10 +285,10 @@ button {
 .direction-indicator {
   position: absolute;
   left: 50%;
-  top: 50%;
+  top: var(--table-center-y);
   transform: translate(-50%, -50%);
-  width: min(36vw, 340px);
-  height: min(36vw, 340px);
+  width: var(--direction-size);
+  height: var(--direction-size);
   pointer-events: none;
   overflow: visible;
   z-index: 1;
@@ -278,7 +297,7 @@ button {
 .direction-arrow {
   position: absolute;
   top: 50%;
-  height: min(18vw, 170px);
+  height: var(--direction-arrow-height);
   width: auto;
   object-fit: contain;
   opacity: 0.6;
@@ -367,8 +386,8 @@ button {
 }
 
 .stack-card {
-  width: 62px;
-  height: 94px;
+  width: var(--stack-card-width);
+  height: var(--stack-card-height);
   border-radius: 10px;
   position: absolute;
   top: 0;
@@ -381,9 +400,9 @@ button {
 .center-zone {
   position: absolute;
   left: 50%;
-  top: 50%;
+  top: var(--table-center-y);
   transform: translate(-50%, -50%);
-  width: min(36vw, 340px);
+  width: var(--center-zone-size);
   aspect-ratio: 1;
   border-radius: 50%;
   background: var(--desk);
@@ -394,33 +413,29 @@ button {
 
 .draw-pile {
   position: absolute;
-  left: 12%;
+  left: calc(50% - var(--table-pile-offset-x));
   top: 50%;
-  transform: translateY(-50%);
-  width: clamp(68px, 8vw, 94px);
-  height: clamp(96px, 11vw, 136px);
+  transform: translate(-50%, -50%);
+  width: var(--table-card-width);
+  height: var(--table-card-height);
   padding: 0;
-  border-radius: 12px;
-}
-
-.draw-pile .back-card {
-  position: absolute;
-  inset: 0;
-  border-radius: 8px;
   border: 3px solid var(--ink);
-  background: linear-gradient(180deg, #b8afa6, #9b9188);
-}
-
-.draw-pile .back-card:nth-child(1) {
-  transform: translate(7px, -7px);
-}
-
-.draw-pile .back-card:nth-child(2) {
-  transform: translate(0, 0);
-}
-
-.draw-pile .back-card:nth-child(3) {
-  transform: translate(-7px, 7px);
+  outline: none;
+  background: #f0e4dc;
+  color: var(--ink);
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: clamp(0.52rem, calc(var(--table-card-width) * 0.23), 0.86rem);
+  line-height: 1;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow: none;
+  appearance: none;
+  overflow: hidden;
+  cursor: pointer;
 }
 
 .draw-pile:focus-visible,
@@ -432,25 +447,23 @@ button {
 
 .center-piles {
   position: absolute;
-  left: 58%;
+  left: calc(50% + var(--table-pile-offset-x));
   top: 50%;
-  transform: translateY(-50%);
+  transform: translate(-50%, -50%);
   display: flex;
   align-items: center;
 }
 
 .pile,
 .top-card {
-  width: clamp(72px, 9vw, 104px);
-  height: clamp(104px, 13vw, 150px);
+  width: var(--table-card-width);
+  height: var(--table-card-height);
   border-radius: 12px;
   display: grid;
   place-items: center;
   font-weight: 800;
   letter-spacing: 0.02em;
   border: 3px solid var(--ink);
-  outline: 3px solid var(--card-white);
-  outline-offset: -9px;
   overflow: hidden;
 }
 
@@ -552,12 +565,16 @@ button {
   width: 100%;
   overflow: visible;
   padding: 0.1rem 0.25rem 0;
-  min-height: clamp(140px, 19vh, 230px);
+  min-height: calc(var(--hand-card-height) + 8px);
+}
+
+.player-hand.multi-row {
+  min-height: calc(var(--hand-card-height) + var(--hand-card-height) + 16px);
 }
 
 .player-card {
-  width: clamp(88px, 9vw, 122px);
-  height: clamp(132px, 14vw, 182px);
+  width: var(--hand-card-width);
+  height: var(--hand-card-height);
   border-radius: 12px;
   border: 3px solid var(--ink);
   outline: 3px solid var(--card-white);
@@ -571,14 +588,14 @@ button {
   text-transform: uppercase;
   cursor: pointer;
   transition: opacity 120ms ease;
-  margin-left: -22px;
+  margin-left: var(--hand-card-overlap);
   position: relative;
-  transform: translateY(var(--lift, 0px)) rotate(var(--tilt, 0deg));
+  transform: translateY(var(--lift, 0px));
   overflow: hidden;
 }
 
 .player-card:hover {
-  transform: translateY(calc(var(--lift, 0px) - 4px)) rotate(var(--tilt, 0deg));
+  transform: translateY(calc(var(--lift, 0px) - 4px));
 }
 
 .player-card:first-child {
@@ -658,42 +675,348 @@ button {
 }
 
 @media (max-width: 780px) {
+  :root {
+    --center-zone-size: min(40vw, 250px);
+    --direction-size: min(36vw, 220px);
+    --direction-arrow-height: min(18vw, 110px);
+    --pile-width: clamp(62px, 12vw, 88px);
+    --pile-height: clamp(92px, 18vw, 128px);
+    --hand-card-width: clamp(72px, 16vw, 100px);
+    --hand-card-height: clamp(110px, 22vw, 150px);
+    --hand-card-overlap: -16px;
+    --stack-card-width: 52px;
+    --stack-card-height: 78px;
+  }
+
   .app-shell {
     padding: 0.5rem;
   }
 
-  .center-zone {
-    width: min(40vw, 250px);
+  .player-card {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 700px), (max-height: 900px) {
+  :root {
+    --center-zone-size: min(36vw, 220px);
+    --direction-size: min(35vw, 210px);
+    --direction-arrow-height: min(16vw, 96px);
+    --pile-width: clamp(58px, 11vw, 82px);
+    --pile-height: clamp(84px, 16vw, 120px);
+    --draw-pile-width: clamp(58px, 10.5vw, 82px);
+    --draw-pile-height: clamp(84px, 15vw, 120px);
+    --hand-card-width: clamp(64px, 18vw, 92px);
+    --hand-card-height: clamp(96px, 26vw, 138px);
+    --hand-card-overlap: -10px;
+    --hand-min-height: 178px;
+    --stack-card-width: 46px;
+    --stack-card-height: 70px;
   }
 
-  .pile,
-  .top-card {
-    width: clamp(62px, 12vw, 88px);
-    height: clamp(92px, 18vw, 128px);
+  .app-shell {
+    padding: 0.5rem 0;
+  }
+
+  .hud h1 {
+    margin: 0.4rem 0.35rem;
+    font-size: clamp(0.92rem, 3.4vw, 1.18rem);
+  }
+
+  #new-game {
+    margin: 0;
+  }
+
+  .rules-button {
+    margin-right: 0;
+    width: 38px;
+    height: 38px;
+  }
+
+  .seat-name {
+    font-size: 0.78rem;
+    padding: 0.22rem 0.5rem;
+    letter-spacing: 0.07em;
+  }
+
+  .stack {
+    min-width: 34px;
+  }
+
+  .player-zone {
+    width: min(100%, 760px);
+    bottom: 1rem;
+  }
+
+  .player-hand {
+    flex-wrap: wrap;
+    align-content: end;
+    row-gap: 0.3rem;
+    column-gap: 0;
+    max-width: min(96vw, 740px);
+    padding: 0.12rem 0.28rem 0;
+    overflow: hidden;
+  }
+
+  .player-hand.multi-row {
+    min-height: calc(var(--hand-card-height) + var(--hand-card-height) + 20px);
   }
 
   .player-card {
-    width: clamp(72px, 16vw, 100px);
-    height: clamp(110px, 22vw, 150px);
-    font-size: 0.9rem;
-    margin-left: -16px;
+    margin-left: 0;
   }
 
-  .stack-card {
-    width: 52px;
-    height: 78px;
+  .wild-choice-layer {
+    top: 36%;
+    gap: 0.55rem;
   }
 
-  .direction-arrow {
-    border-width: 6px;
+  .wild-color-option {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+@media (max-width: 600px) {
+  :root {
+    --center-zone-size: min(37vw, 190px);
+    --direction-size: min(35vw, 180px);
+    --direction-arrow-height: min(15vw, 78px);
+    --pile-width: clamp(54px, 10vw, 74px);
+    --pile-height: clamp(78px, 14vw, 108px);
+    --draw-pile-width: clamp(54px, 10vw, 74px);
+    --draw-pile-height: clamp(78px, 14vw, 108px);
+    --hand-card-width: clamp(60px, 18vw, 84px);
+    --hand-card-height: clamp(90px, 25vw, 124px);
+    --hand-min-height: 168px;
   }
 
-  .direction-indicator {
-    width: min(36vw, 220px);
-    height: min(36vw, 220px);
+  .app-shell {
+    padding: 0.38rem 0;
+    gap: 0.2rem;
   }
 
-  .direction-arrow {
-    height: min(18vw, 110px);
+  .hud-actions {
+    gap: 0.35rem;
+  }
+
+  .hud button {
+    border-width: 2px;
+    padding: 0.4rem 0.72rem;
+  }
+
+  .center-zone {
+    border-width: 3px;
+  }
+
+  .player-zone {
+    bottom: 1.2rem;
+  }
+
+  .direction-arrow.left {
+    transform: translate(calc(-58% - 6px), -50%) rotate(-30deg) scale(1);
+  }
+
+  .direction-arrow.right {
+    transform: translate(calc(58% + 6px), -50%) rotate(150deg) scale(1);
+  }
+
+  .direction-indicator.counterclockwise .direction-arrow.left {
+    transform: translate(calc(-58% - 6px), -50%) rotate(30deg) scaleY(-1) scale(1);
+  }
+
+  .direction-indicator.counterclockwise .direction-arrow.right {
+    transform: translate(calc(58% + 6px), -50%) rotate(210deg) scaleY(-1) scale(1);
+  }
+
+  .player-label {
+    margin-bottom: 0.12rem;
+    font-size: 0.82rem;
+    padding: 0.25rem 0.62rem;
+  }
+}
+
+@media (max-width: 420px) {
+  :root {
+    --center-zone-size: min(40vw, 168px);
+    --direction-size: min(38vw, 150px);
+    --direction-arrow-height: min(14vw, 66px);
+    --pile-width: clamp(50px, 15vw, 66px);
+    --pile-height: clamp(72px, 21vw, 94px);
+    --draw-pile-width: clamp(50px, 15vw, 66px);
+    --draw-pile-height: clamp(72px, 21vw, 94px);
+    --hand-card-width: clamp(54px, 16vw, 72px);
+    --hand-card-height: clamp(80px, 23vw, 106px);
+    --hand-card-overlap: -4px;
+    --hand-min-height: 152px;
+    --stack-card-width: 40px;
+    --stack-card-height: 62px;
+  }
+
+  .player-hand {
+    max-width: 98vw;
+    row-gap: 0.18rem;
+  }
+
+  .player-card {
+    margin-left: 0;
+    border-width: 2px;
+    outline-width: 2px;
+    outline-offset: -7px;
+  }
+
+  .player-zone {
+    bottom: 1.3rem;
+  }
+
+  .wild-choice-layer {
+    top: 38%;
+    gap: 0.42rem;
+  }
+
+  .wild-color-option {
+    width: 34px;
+    height: 34px;
+    border-width: 2px;
+    box-shadow: 0 0 0 2px var(--card-white);
+  }
+}
+
+@media (max-height: 500px) and (orientation: landscape) {
+  :root {
+    --center-zone-size: min(31vw, 150px);
+    --direction-size: min(30vw, 138px);
+    --direction-arrow-height: min(12vw, 56px);
+    --pile-width: clamp(46px, 7.5vw, 60px);
+    --pile-height: clamp(66px, 10.5vw, 88px);
+    --draw-pile-width: clamp(46px, 7.5vw, 60px);
+    --draw-pile-height: clamp(66px, 10.5vw, 88px);
+    --hand-card-width: clamp(52px, 8.5vw, 68px);
+    --hand-card-height: clamp(76px, 12.5vw, 96px);
+    --hand-card-overlap: -8px;
+    --hand-min-height: 114px;
+    --stack-card-width: 34px;
+    --stack-card-height: 52px;
+  }
+
+  .app-shell {
+    padding: 0.2rem 0;
+    gap: 0.1rem;
+  }
+
+  .hud {
+    gap: 0.4rem;
+  }
+
+  .hud h1 {
+    margin: 0.12rem 0.15rem;
+    font-size: clamp(0.76rem, 1.45vw, 0.9rem);
+  }
+
+  .hud button {
+    padding: 0.26rem 0.58rem;
+  }
+
+  .rules-button {
+    width: 30px;
+    height: 30px;
+    font-size: 1rem;
+  }
+
+  .center-zone {
+    border-width: 3px;
+  }
+
+  .seat-name {
+    font-size: 0.68rem;
+    padding: 0.16rem 0.4rem;
+    letter-spacing: 0.05em;
+  }
+
+  .stack {
+    min-width: 28px;
+  }
+
+  .player-zone {
+    bottom: 0.8rem;
+  }
+
+  .player-hand {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: end;
+    max-width: 96vw;
+    min-height: calc(var(--hand-card-height) + 6px);
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0.05rem 0.28rem 0;
+    scrollbar-width: thin;
+  }
+
+  .player-card {
+    margin-left: var(--hand-card-overlap);
+  }
+
+  .player-card:first-child {
+    margin-left: 0;
+  }
+
+  .player-label {
+    margin-bottom: 0.08rem;
+    font-size: 0.74rem;
+    padding: 0.2rem 0.52rem;
+  }
+
+  .wild-choice-layer {
+    top: 38%;
+    gap: 0.34rem;
+  }
+
+  .wild-color-option {
+    width: 30px;
+    height: 30px;
+    border-width: 2px;
+    box-shadow: 0 0 0 2px var(--card-white);
+  }
+
+  .winner-banner {
+    top: 45%;
+    padding: 0.38rem 0.72rem;
+    font-size: 0.78rem;
+  }
+
+  .modal-card {
+    width: min(95vw, 520px);
+    max-height: 95vh;
+    padding: 0.72rem 0.78rem 0.82rem;
+  }
+
+  .modal-card h2 {
+    font-size: 1.02rem;
+    margin: 0 0 0.35rem;
+  }
+
+  .modal-copy,
+  .rules-copy p,
+  .rules-copy li {
+    font-size: 0.88rem;
+    line-height: 1.28;
+  }
+
+  .modal-form {
+    gap: 0.42rem;
+  }
+
+  .modal-form select,
+  .modal-form input {
+    padding: 0.35rem 0.48rem;
+  }
+
+  .modal-actions {
+    margin-top: 0.5rem;
+  }
+
+  .modal-actions button {
+    padding: 0.34rem 0.72rem;
   }
 }
