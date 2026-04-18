@@ -1,0 +1,9 @@
+{
+  "name": "webuno",
+  "version": "1.0.0",
+  "description": "One-person UNO rules engine for Node.js testing",
+  "type": "commonjs",
+  "scripts": {
+    "test": "node --test"
+  }
+}

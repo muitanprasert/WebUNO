@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Web UNO</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="hud">
+      <div class="hud-left">
+        <h1>Web UNO (Mui's Edition)</h1>
+      </div>
+      <div class="hud-actions">
+        <button id="new-game" type="button">New Game</button>
+        <button id="rules-button" class="rules-button" type="button" aria-label="Game rules">?</button>
+      </div>
+    </header>
+
+    <main id="table" class="stage" aria-label="UNO table">
+      <div id="anim-layer" class="anim-layer" aria-hidden="true"></div>
+      <div id="wild-choice-layer" class="wild-choice-layer" aria-hidden="true"></div>
+      <div id="seats-layer" class="seats-layer"></div>
+      <div id="direction-indicator" class="direction-indicator clockwise" aria-hidden="true">
+        <img class="direction-arrow left" src="./src/curved_arrow.svg" alt="" aria-hidden="true">
+        <img class="direction-arrow right" src="./src/curved_arrow.svg" alt="" aria-hidden="true">
+      </div>
+
+      <div class="center-zone" aria-label="Draw pile and discard pile">
+        <button id="draw-pile" class="pile draw-pile" type="button" aria-label="Draw card"></button>
+        <div id="center-piles" class="center-piles"></div>
+      </div>
+
+      <p id="error-banner" class="error-banner" aria-live="polite"></p>
+      <div id="winner-banner" class="winner-banner" aria-live="polite"></div>
+
+      <div class="player-zone">
+        <div class="player-label">YOU</div>
+        <div id="player-hand" class="player-hand" aria-label="Your cards"></div>
+      </div>
+    </main>
+
+    <div id="new-game-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="new-game-title">
+      <div class="modal-card">
+        <h2 id="new-game-title">Start New Game</h2>
+        <p class="modal-copy">Choose total players (including you).</p>
+        <form id="new-game-form" class="modal-form">
+          <label for="player-count-select">Total players</label>
+          <select id="player-count-select" name="playerCount">
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4" selected>4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+          </select>
+          <label for="agent-names-input">Player names for other people</label>
+          <input id="agent-names-input" name="agentNames" type="text" placeholder="Comma-separated names, e.g. Alex, Sam, Priya" autocomplete="off">
+          <label for="speed-select">Agent speed</label>
+          <select id="speed-select" name="agentSpeed">
+            <option value="fast" selected>Fast</option>
+            <option value="medium">Medium</option>
+            <option value="slow">Slow</option>
+          </select>
+          <div class="modal-actions">
+            <button id="new-game-cancel" type="button">Cancel</button>
+            <button id="new-game-confirm" type="submit">Start</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="rules-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="rules-title">
+      <div class="modal-card rules-card">
+        <h2 id="rules-title">How To Play</h2>
+        <div class="rules-copy">
+          <p>Your goal is to get rid of all your cards before everyone else.</p>
+          <p>On your turn, play a card that matches the top discard by color, number, or symbol.</p>
+          <p>You can also play wild cards at any time and then choose the color.</p>
+          <p>If you cannot play, click the draw pile to draw cards. After drawing, if you have a playable card, you may still play before your turn ends.</p>
+          <p>Action cards:</p>
+          <ul>
+            <li>Skip: the next player loses their turn.</li>
+            <li>Reverse: the turn direction changes.</li>
+            <li>+2 and +4: the next player draws that many cards unless stacking rules let them answer with the same draw type.</li>
+          </ul>
+          <p>You can make a combo play with cards of the same number or symbol. Shift-select lets you group matching cards for one combo play. Release Shift to play the combo.</p>
+          <p></p>
+          <p>P.S. Based on the rules that the developer's friends in middle school taught her, not the official UNO rules.</p>
+        </div>
+        <div class="modal-actions">
+          <button id="rules-close" type="button">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="./src/uno.js"></script>
+  <script src="./ui.js"></script>
+</body>
+</html>
