@@ -16,7 +16,6 @@
   const directionIndicatorNode = document.getElementById("direction-indicator");
   const centerPilesNode = document.getElementById("center-piles");
   const playerHandNode = document.getElementById("player-hand");
-  const playerLabelNode = document.querySelector(".player-label");
   const errorBannerNode = document.getElementById("error-banner");
   const winnerBannerNode = document.getElementById("winner-banner");
   const drawPileButton = document.getElementById("draw-pile");
@@ -31,7 +30,7 @@
   const rulesModalNode = document.getElementById("rules-modal");
   const rulesCloseButton = document.getElementById("rules-close");
 
-  if (!tableNode || !animLayerNode || !wildChoiceLayerNode || !seatsLayerNode || !directionIndicatorNode || !centerPilesNode || !playerHandNode || !playerLabelNode || !errorBannerNode || !winnerBannerNode || !drawPileButton || !newGameButton || !rulesButton || !newGameModalNode || !newGameFormNode || !playerCountSelectNode || !agentNamesInputNode || !speedSelectNode || !newGameCancelButton || !rulesModalNode || !rulesCloseButton) {
+  if (!tableNode || !animLayerNode || !wildChoiceLayerNode || !seatsLayerNode || !directionIndicatorNode || !centerPilesNode || !playerHandNode || !errorBannerNode || !winnerBannerNode || !drawPileButton || !newGameButton || !rulesButton || !newGameModalNode || !newGameFormNode || !playerCountSelectNode || !agentNamesInputNode || !speedSelectNode || !newGameCancelButton || !rulesModalNode || !rulesCloseButton) {
     throw new Error("Interface elements are missing.");
   }
 
@@ -42,11 +41,17 @@
   let humanBlockedSkipTimer = null;
   let hiddenHumanCardIds = new Set();
   let selectedCardIds = new Set();
+  let touchComboMode = false;
+  let suppressTouchClick = false;
   let activeWildColor = null;
   let finishedRanks = new Map();
   let agentNames = new Map();
   let pendingPlayerCount = AGENT_PLAYERS + 1;
   let agentThinkDelayMs = 0;
+
+  const TOUCH_LONG_PRESS_MS = 280;
+  const TOUCH_MOVE_CANCEL_PX = 12;
+  const TOUCH_SWIPE_UP_MIN_PX = 28;
 
   function normalizedPlayerCount(value) {
     const parsed = Number.parseInt(String(value), 10);
@@ -661,8 +666,110 @@
       button.classList.toggle("selected", isSelected);
       button.classList.remove("disabled");
 
+      let touchStartY = 0;
+      let touchStartX = 0;
+      let touchTracking = false;
+      let longPressTriggered = false;
+      let longPressTimer = null;
+
+      const clearLongPressTimer = () => {
+        if (longPressTimer) {
+          window.clearTimeout(longPressTimer);
+          longPressTimer = null;
+        }
+      };
+
+      button.addEventListener("pointerdown", (event) => {
+        if (event.pointerType !== "touch" || isAnimating) {
+          return;
+        }
+
+        touchTracking = true;
+        longPressTriggered = false;
+        touchStartY = event.clientY;
+        touchStartX = event.clientX;
+        clearLongPressTimer();
+
+        longPressTimer = window.setTimeout(() => {
+          if (!touchTracking || isAnimating) {
+            return;
+          }
+
+          longPressTriggered = true;
+          touchComboMode = true;
+
+          if (selectedCardIds.has(card.id)) {
+            selectedCardIds.delete(card.id);
+          } else if (isPlayableAsCombo) {
+            selectedCardIds.add(card.id);
+          }
+
+          suppressTouchClick = true;
+          window.setTimeout(() => {
+            suppressTouchClick = false;
+          }, 0);
+          render();
+        }, TOUCH_LONG_PRESS_MS);
+      });
+
+      button.addEventListener("pointermove", (event) => {
+        if (!touchTracking || event.pointerType !== "touch") {
+          return;
+        }
+
+        const deltaX = Math.abs(event.clientX - touchStartX);
+        const deltaY = Math.abs(event.clientY - touchStartY);
+        if (deltaX > TOUCH_MOVE_CANCEL_PX || deltaY > TOUCH_MOVE_CANCEL_PX) {
+          clearLongPressTimer();
+        }
+      });
+
+      button.addEventListener("pointercancel", () => {
+        touchTracking = false;
+        clearLongPressTimer();
+      });
+
+      button.addEventListener("pointerup", (event) => {
+        if (event.pointerType !== "touch") {
+          return;
+        }
+
+        touchTracking = false;
+        clearLongPressTimer();
+
+        if (isAnimating || !touchComboMode) {
+          return;
+        }
+
+        const deltaY = event.clientY - touchStartY;
+        const swipedUp = deltaY <= -TOUCH_SWIPE_UP_MIN_PX;
+        if (!swipedUp || !selectedCardIds.has(card.id) || selectedCardIds.size === 0) {
+          return;
+        }
+
+        const comboIds = Array.from(selectedCardIds);
+        if (!isValidComboSequence(comboIds)) {
+          return;
+        }
+
+        suppressTouchClick = true;
+        window.setTimeout(() => {
+          suppressTouchClick = false;
+        }, 0);
+
+        void performHumanPlayCombo(comboIds);
+        selectedCardIds.clear();
+        touchComboMode = false;
+        render();
+      });
+
       button.addEventListener("click", (event) => {
         if (isAnimating) {
+          return;
+        }
+
+        if (suppressTouchClick) {
+          suppressTouchClick = false;
           return;
         }
 
@@ -672,6 +779,17 @@
             selectedCardIds.delete(card.id);
           } else if (isPlayableAsCombo) {
             selectedCardIds.add(card.id);
+          }
+          render();
+        } else if (touchComboMode) {
+          event.preventDefault();
+          if (isSelected) {
+            selectedCardIds.delete(card.id);
+          } else if (isPlayableAsCombo) {
+            selectedCardIds.add(card.id);
+          }
+          if (selectedCardIds.size === 0) {
+            touchComboMode = false;
           }
           render();
         } else {
@@ -695,16 +813,14 @@
       playerHandNode.append(button);
     });
 
-    const rowOffsets = new Set();
-    for (const cardNode of playerHandNode.children) {
-      rowOffsets.add(cardNode.offsetTop);
-    }
-    playerHandNode.classList.toggle("multi-row", rowOffsets.size > 1);
+    const offsets = Array.from(playerHandNode.children).map((cardNode) => cardNode.offsetTop);
+    const minOffset = Math.min(...offsets);
+    const maxOffset = Math.max(...offsets);
+    const hasWrapped = maxOffset - minOffset > (playerHandNode.offsetHeight * 0.4);
+    playerHandNode.classList.toggle("multi-row", hasWrapped);
   }
 
   function updateTurnHighlights() {
-    playerLabelNode.classList.toggle("active", game.currentPlayer === HUMAN_INDEX);
-
     seatsLayerNode.querySelectorAll(".seat").forEach((seat) => {
       seat.classList.toggle("current", Number(seat.dataset.playerIndex) === game.currentPlayer);
     });
@@ -784,34 +900,7 @@
     return { buttons, autoColor };
   }
 
-  function animateChipToTop(color, originRect) {
-    const targetRect = topCardRect();
-    const chip = document.createElement("div");
-    chip.className = `wild-color-chip ${color}`;
 
-    const from = stageRectFrom(originRect);
-    const to = stageRectFrom(targetRect);
-
-    chip.style.left = `${from.left + from.width / 2 - 11}px`;
-    chip.style.top = `${from.top + from.height / 2 - 11}px`;
-    animLayerNode.append(chip);
-
-    return new Promise((resolve) => {
-      const finish = () => {
-        chip.remove();
-        resolve();
-      };
-
-      chip.addEventListener("transitionend", finish, { once: true });
-
-      requestAnimationFrame(() => {
-        chip.style.left = `${to.left + to.width / 2 - 11}px`;
-        chip.style.top = `${to.top + to.height / 2 - 11}px`;
-        chip.style.transform = "scale(1.25)";
-        window.setTimeout(finish, 600);
-      });
-    });
-  }
 
   function chooseWildColor({ autoColor, originRect }) {
     const { buttons } = renderWildChoiceButtons(autoColor);
@@ -909,11 +998,6 @@
     activeWildColor = (leadCard.type === CARD_TYPES.WILD || leadCard.type === CARD_TYPES.WILD_DRAW_FOUR) ? chooseColor : null;
     ensureCurrentActivePlayer();
     render();
-
-    if (activeWildColor) {
-      await animateChipToTop(activeWildColor, chipOriginRect || safeSourceRect);
-      render();
-    }
   }
 
   async function animatePlay(playerIndex, card, sourceRect, chooseColor, chipOriginRect) {
@@ -1105,11 +1189,6 @@
       activeWildColor = (card.type === CARD_TYPES.WILD || card.type === CARD_TYPES.WILD_DRAW_FOUR) ? chooseColor : null;
       ensureCurrentActivePlayer();
       render();
-
-      if (activeWildColor) {
-        await animateChipToTop(activeWildColor, chipOriginRect || sourceRect);
-        render();
-      }
 
       const restarted = await resolveWinners();
       if (restarted) {
@@ -1410,6 +1489,7 @@
     if (event.key === "Shift" && selectedCardIds.size > 0 && isValidComboSequence(Array.from(selectedCardIds))) {
       void performHumanPlayCombo(Array.from(selectedCardIds));
       selectedCardIds.clear();
+      touchComboMode = false;
     }
   });
 
