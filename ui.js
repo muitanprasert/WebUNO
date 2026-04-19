@@ -712,6 +712,10 @@
         }, TOUCH_LONG_PRESS_MS);
       });
 
+      button.addEventListener("contextmenu", (event) => {
+        event.preventDefault();
+      });
+
       button.addEventListener("pointermove", (event) => {
         if (!touchTracking || event.pointerType !== "touch") {
           return;
